@@ -11,6 +11,7 @@ from price import prices
 bot = RumClient(**RumpyConfig.GUI)
 progressfile = os.path.join(os.path.dirname(__file__), "progresss.json")
 progress = JsonFile(progressfile).read({})
+seeds = JsonFile(RumpyConfig.SEEDSFILE).read({})
 
 
 def post():
@@ -18,6 +19,9 @@ def post():
     print(info)
     for gid in groups:
         if not bot.group.is_joined(gid):
+            seed = seeds.get(gid)
+            if seed:
+                bot.group.join(seed)
             continue
         for coin in groups[gid]["coins"]:
             can_post = False
