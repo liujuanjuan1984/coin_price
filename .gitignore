@@ -129,3 +129,5 @@ dmypy.json
 .pyre/
 config.py
 scripts/progresss.json
+*.json
+temp*.py

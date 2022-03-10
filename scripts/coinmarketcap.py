@@ -50,7 +50,7 @@ def prices(data=None, n=2):
             "price_24h": price_24h,
             "price_30d": price_30d,
             "time": beijing,
-            "text": itext,
+            "text": [itext],
         }
     return info
 
