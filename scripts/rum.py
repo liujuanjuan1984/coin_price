@@ -17,6 +17,11 @@ seeds = JsonFile(RumpyConfig.SEEDSFILE).read({})
 def post():
     info = prices()
     print(info)
+
+    if not info:
+        sleep(5*60)
+        return 
+
     for gid in groups:
         if not bot.group.is_joined(gid):
             seed = seeds.get(gid)
