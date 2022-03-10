@@ -48,10 +48,3 @@ class SwapPrice:
         b = f"""=== RUM 汇率 ===\nBTC/RUM 汇率 {round(btc_usdt/rum_usdt,2)}\nETH/RUM 汇率 {round(eth_usdt/rum_usdt,2)}\nBOX/RUM 汇率 {round(box_usdt/rum_usdt,2)}\nEOS/RUM 汇率 {round(eos_usdt/rum_usdt,2)}"""
 
         return a, b
-
-
-if __name__ == "__main__":
-    s = SwapPrice()
-    while True:
-        a, b = s.rum()
-        info["RUM"] = {"text": [a, b]}

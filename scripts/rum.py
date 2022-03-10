@@ -5,7 +5,7 @@ from rumpyconfig import RumpyConfig
 from officepy import JsonFile
 from rumpy import RumClient
 from config import groups
-from coinmarketcap import prices
+from coinmarketcap import CoinmarketcapPrice
 from swap import SwapPrice
 
 bot = RumClient(**RumpyConfig.GUI)
@@ -58,10 +58,9 @@ def post(info):
 
 
 if __name__ == "__main__":
-    s = SwapPrice()
-
     while True:
-        info = prices()
-        a, b = s.rum()
+        info = CoinmarketcapPrice().price()
+        a, b = SwapPrice().rum()
         info["RUM"] = {"text": [a, b]}
+        print(info)
         post(info)
