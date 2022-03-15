@@ -79,7 +79,7 @@ class Bot(RumClient):
 
         return info
 
-    def post(self):
+    def post_to_rum(self):
         info = {}
         while True:
             info = self._post_to_rum(info)
@@ -93,4 +93,4 @@ class Bot(RumClient):
 
 
 if __name__ == "__main__":
-    Bot(**RumpyConfig.GUI).post()
+    Bot(**RumpyConfig.GUI).post_to_rum()
