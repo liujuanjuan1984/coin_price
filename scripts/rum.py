@@ -47,7 +47,7 @@ class Bot(RumClient):
         JsonFile(self.progressfile).write(progress)
         return progress
 
-    def _post(self, info=None, progress=None):
+    def _post_to_rum(self, info=None, progress=None):
         info = info or {}
         seeds = JsonFile(RumpyConfig.SEEDSFILE).read({})
         progress = progress or JsonFile(self.progressfile).read({})
@@ -82,7 +82,7 @@ class Bot(RumClient):
     def post(self):
         info = {}
         while True:
-            info = self._post(info)
+            info = self._post_to_rum(info)
             print(info)
             if len(info) == 0:
                 print(datetime.datetime.now(), "zzzzz ... 300...")
