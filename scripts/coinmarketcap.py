@@ -6,30 +6,17 @@ from config import CMC_PRO_API_KEY  # coinmarketcap 的密钥
 
 class CoinmarketcapPrice:
     def __init__(self, n=2):
-        self.url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest"
         self.n = n
 
-        headers = {"Accepts": "application/json", "X-CMC_PRO_API_KEY": CMC_PRO_API_KEY}
-        self.session = requests.Session()
-        self.session.headers.update(headers)
-
     def _origin_data(self):
-        for i in range(3):  # 如不成功，就持续尝试 3 次，每次间隔 10 分钟
-            try:
-                parameters = {"start": "1", "limit": str(self.n), "convert": "USD"}
-                data = self.session.get(self.url, params=parameters).json()
-                return data
-            except Exception as e:
-                print(e)
-                sleep(5 * 60)
+        headers = {"Accepts": "application/json", "X-CMC_PRO_API_KEY": CMC_PRO_API_KEY}
+        session = requests.Session()
+        session.headers.update(headers)
+        url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest"
+        parameters = {"start": "1", "limit": str(self.n), "convert": "USD"}
+        return session.get(url, params=parameters).json()
 
-    def price(self, data=None):
-
-        data = data or self._origin_data()
-
-        if not data:
-            return {}
-
+    def _info_data(self, data):
         info = {}
         for i in range(0, self.n):
             symbol = data["data"][i]["symbol"]
@@ -54,3 +41,17 @@ class CoinmarketcapPrice:
                 "text": [itext],
             }
         return info
+
+    def price(self, data=None):
+        for i in range(3):
+            data = data or self._origin_data()
+            if data:
+                return self._info_data(data)
+            else:
+                sleep(35)
+        return {}
+
+
+if __name__ == "__main__":
+    info = CoinmarketcapPrice().price()
+    print(info)
