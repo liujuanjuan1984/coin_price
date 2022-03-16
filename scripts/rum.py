@@ -54,7 +54,8 @@ class Bot(RumClient):
 
         for gid in groups:
             # join group if bot-node not in the group.
-            if not self.group.is_joined(gid):
+            self.group_id = gid
+            if not self.group.is_joined():
                 seed = seeds.get(gid)
                 if seed:
                     self.group.join(seed)
@@ -71,7 +72,7 @@ class Bot(RumClient):
 
                 for content in info[coin]["text"]:
                     print(content)
-                    resp = self.group.send_note(group_id=gid, content=content)
+                    resp = self.group.send_note(content=content)
                     print(resp)
                     if "trx_id" in resp:
                         progress = self._update_progress(gid, coin, progress)
@@ -83,7 +84,6 @@ class Bot(RumClient):
         info = {}
         while True:
             info = self._post_to_rum(info)
-            print(info)
             if len(info) == 0:
                 print(datetime.datetime.now(), "zzzzz ... 300...")
                 sleep(5 * 60)
