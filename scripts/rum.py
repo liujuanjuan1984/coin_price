@@ -30,7 +30,7 @@ class Bot(RumClient):
                 return False
 
     def _update_info(self, coin, info):
-        if coin not in info:
+        if not info.get(coin):  # coin 不存在或为空
             if coin == "RUM":
                 a, b = SwapPrice().rum()
                 info["RUM"] = {"text": [a, b]}
@@ -75,7 +75,7 @@ class Bot(RumClient):
                     print(resp)
                     if "trx_id" in resp:
                         progress = self._update_progress(gid, coin, progress)
-                        del info[coin]
+                        info[coin] = None
 
         return info
 

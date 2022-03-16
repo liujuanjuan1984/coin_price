@@ -130,4 +130,4 @@ dmypy.json
 config.py
 scripts/progresss.json
 *.json
-temp*.py
+*temp*.py
