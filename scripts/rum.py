@@ -30,14 +30,20 @@ class Bot(RumClient):
                 return False
 
     def _update_info(self, coin, info):
-        if not info.get(coin):  # coin 不存在或为空
-            if coin == "RUM":
-                a, b = SwapPrice().rum()
-                info["RUM"] = {"text": [a, b]}
-            elif coin in ["ETH", "BTC"]:
+
+        if info.get(coin) == None:
+            info[coin] = {}
+        if "text" not in info[coin]:
+            info[coin]["text"] = []
+
+            if coin in ["ETH", "BTC"]:
                 xinfo = CoinmarketcapPrice().price()
                 info.update(xinfo)
-        return info, coin in info
+
+            swap = SwapPrice().output(coin)
+            if swap:
+                info[coin]["text"].append(swap)
+        return info, len(info[coin]["text"]) > 0
 
     def _update_progress(self, gid, coin, progress):
 

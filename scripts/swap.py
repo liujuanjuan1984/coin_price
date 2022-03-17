@@ -1,27 +1,43 @@
 import requests
 import json
-from officepy import JsonFile
+import os
 import datetime
+from officepy import JsonFile, Dir
 
-# assets id in mixin network.
-USDT = "4d8c508b-91c5-375b-92b0-ee702ed2dac5"
-RUM = "4f2ec12c-22f4-3a9e-b757-c84b6415ea8f"
-XIN = "c94ac88f-4671-3976-b60a-09064f1811e8"
-BTC = "c6d0c728-2624-429b-8e0d-d9d19b6592fa"
-ETH = "43d61dcd-e413-450d-80b8-101d5e903357"
-EOS = "6cfe566e-4aad-470b-8c9a-2fd35b49c68d"
-BOX = "f5ef6b5d-cc5a-3d90-b2c0-a2fd386e7a3c"
+this_dir = os.path.dirname(__file__)
+data_dir = os.path.join(this_dir, "data")
+Dir(data_dir).check()
+assetsfile = os.path.join(this_dir, "data", "assets.json")
+pairsfile = os.path.join(this_dir, "data", "pairs.json")
 
 
 class SwapPrice:
+    """
+    4swap (base on mixin network) mtg price bot
+    https://github.com/fox-one/4swap-sdk-go/blob/master/docs/api.md
+    """
+
     def __init__(self):
         headers = {"Accepts": "application/json"}
         self.session = requests.Session()
         self.session.headers.update(headers)
         self.baseurl = "https://api.4swap.org/api"
 
-    def _origin_data(self, quote, base, amount_id=None):
-        api = self.baseurl + f"/pairs/{quote}/{base}"
+    def pairs(self):
+        if os.path.exists(pairsfile):
+            origin_data = JsonFile(pairsfile).read()
+        else:
+            origin_data = self.session.get(f"{self.baseurl}/pairs").json()
+            JsonFile(pairsfile).write(origin_data)
+        origin_data = origin_data["data"]["pairs"]
+
+        return [(item["base_asset_id"], item["quote_asset_id"]) for item in origin_data]
+
+    def paris_symbol(self, symbol):
+        return [item for item in self.pairs() if self.get_id(symbol) in item]
+
+    def pair(self, base_asset_id, quote_asset_id):
+        api = f"{self.baseurl}/pairs/{base_asset_id}/{quote_asset_id}"
         try:
             data = self.session.get(api).json()["data"]
             return data
@@ -29,44 +45,71 @@ class SwapPrice:
             print(e)
             return {}
 
-    def _price(self, quote, base, amount_id=None):
-        for i in range(3):
-            data = self._origin_data(quote, base, amount_id)
-            if data:
-                break
-            sleep(60)
+    def assets(self):
+        if os.path.exists(assetsfile):
+            origin_data = JsonFile(assetsfile).read()
+        else:
+            origin_data = self.session.get(f"{self.baseurl}/pairs").json()
+            JsonFile(assetsfile).write(origin_data)
+        origin_data = origin_data["data"]["assets"]
 
-        if data:
-            price = round(float(data["base_amount"]) / float(data["quote_amount"]), 2)
-            if price < 1:
-                price = round(
-                    float(data["quote_amount"]) / float(data["base_amount"]), 2
-                )
-            if data["base_asset_id"] == amount_id:
-                amount = float(data["base_amount"])
-            elif data["quote_asset_id"] == amount_id:
-                amount = float(data["quote_amount"])
+        symbol_id = {item["symbol"]: item["id"] for item in origin_data}
+        id_symbol = {item["id"]: item["symbol"] for item in origin_data}
+        return symbol_id, id_symbol
+
+    def get_id(self, symbol):
+        symbol_id, id_symbol = self.assets()
+        return symbol_id.get(symbol)
+
+    def get_symbol(self, asset_id):
+        symbol_id, id_symbol = self.assets()
+        return id_symbol.get(asset_id)
+
+    def output(self, symbol, percent=0.01):
+        _paris = self.paris_symbol(symbol)
+        amount = 0
+        lines = []
+        for baseid, quoteid in _paris:
+            data = self.pair(baseid, quoteid)
+            if not data:
+                continue
+            base = self.get_symbol(baseid)
+            quote = self.get_symbol(quoteid)
+            base_amount = float(data["base_amount"])
+            quote_amount = float(data["quote_amount"])
+            if base == symbol:
+                iamount = base_amount
             else:
-                amount = None
-            return price, amount
-        return None, None
+                iamount = quote_amount
 
-    def rum(self):
-        rum_usdt, a1 = self._price(RUM, USDT, RUM)
-        xin_rum, a2 = self._price(RUM, XIN, RUM)
-        btc_usdt, _ = self._price(BTC, USDT)
-        eth_usdt, _ = self._price(ETH, USDT)
-        xin_usdt, _ = self._price(XIN, USDT)
-        box_usdt, _ = self._price(BOX, USDT)
-        eos_usdt, _ = self._price(EOS, USDT)
+            amount += iamount
+            if base_amount != 0:
+                price = round(quote_amount / base_amount, 2)
+            else:
+                price = 0
+            if price < 1:
+                if quote_amount != 0:
+                    price = round(base_amount / quote_amount, 2)
+                else:
+                    price = 0
+                line = (round(iamount, 2), f" {base}/{quote} 汇率 {price}")
+            else:
+                line = (round(iamount, 2), f"{quote}/{base} 汇率 {price}")
+            lines.append(line)
 
-        a = f"""=== RUM 流动池 ===\n【{round(a1+a2,2)}】小计 \n【{round(a1,2)}】RUM/USDT 汇率 {rum_usdt}\n【{round(a2,2)}】XIN/RUM 汇率 {xin_rum}\n{str(datetime.datetime.now())[:19]}"""
+        amount = round(amount, 2)
+        lines.sort(key=lambda item: item[0], reverse=True)
+        lines = [line for line in lines if line[0] / amount >= percent]
 
-        b = f"""=== RUM 汇率 ===\nBTC/RUM 汇率 {round(btc_usdt/rum_usdt,2)}\nETH/RUM 汇率 {round(eth_usdt/rum_usdt,2)}\nBOX/RUM 汇率 {round(box_usdt/rum_usdt,2)}\nEOS/RUM 汇率 {round(eos_usdt/rum_usdt,2)}"""
-
-        return a, b
+        text = (
+            f"=== {symbol} 流动池@4swap ===\n【{amount}】小计\n"
+            + "\n".join([f"【{line[0]}】{line[1]}" for line in lines])
+            + "\n"
+            + str(datetime.datetime.now())[:19]
+        )
+        return text
 
 
 if __name__ == "__main__":
-    a, b = SwapPrice().rum()
-    print(a, b)
+    symbol = "RUM"
+    SwapPrice().output(symbol)
