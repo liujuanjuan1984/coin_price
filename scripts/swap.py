@@ -55,7 +55,7 @@ class SwapPrice:
             origin_data = JsonFile(assetsfile).read()
         else:
             while True:
-                origin_data = self.session.get(f"{self.baseurl}/pairs").json()
+                origin_data = self.session.get(f"{self.baseurl}/assets").json()
                 if origin_data:
                     JsonFile(assetsfile).write(origin_data)
                     break
