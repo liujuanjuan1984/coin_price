@@ -14,7 +14,11 @@ class CoinmarketcapPrice:
         session.headers.update(headers)
         url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest"
         parameters = {"start": "1", "limit": str(self.n), "convert": "USD"}
-        return session.get(url, params=parameters).json()
+        try:
+            resp = session.get(url, params=parameters).json()
+            return resp
+        except Exception as e:
+            print(e)
 
     def _info_data(self, data):
         info = {}

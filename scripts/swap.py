@@ -20,19 +20,36 @@ class SwapPrice:
         self.session.headers.update(headers)
         self.baseurl = "https://api.4swap.org/api"
 
-    def _price(self, quote, base, amount_id=None):
+    def _origin_data(self, quote, base, amount_id=None):
         api = self.baseurl + f"/pairs/{quote}/{base}"
-        data = self.session.get(api).json()["data"]
-        price = round(float(data["base_amount"]) / float(data["quote_amount"]), 2)
-        if price < 1:
-            price = round(float(data["quote_amount"]) / float(data["base_amount"]), 2)
-        if data["base_asset_id"] == amount_id:
-            amount = float(data["base_amount"])
-        elif data["quote_asset_id"] == amount_id:
-            amount = float(data["quote_amount"])
-        else:
-            amount = None
-        return price, amount
+        try:
+            data = self.session.get(api).json()["data"]
+            return data
+        except Exception as e:
+            print(e)
+            return {}
+
+    def _price(self, quote, base, amount_id=None):
+        for i in range(3):
+            data = self._origin_data(quote, base, amount_id)
+            if data:
+                break
+            sleep(60)
+
+        if data:
+            price = round(float(data["base_amount"]) / float(data["quote_amount"]), 2)
+            if price < 1:
+                price = round(
+                    float(data["quote_amount"]) / float(data["base_amount"]), 2
+                )
+            if data["base_asset_id"] == amount_id:
+                amount = float(data["base_amount"])
+            elif data["quote_asset_id"] == amount_id:
+                amount = float(data["quote_amount"])
+            else:
+                amount = None
+            return price, amount
+        return None, None
 
     def rum(self):
         rum_usdt, a1 = self._price(RUM, USDT, RUM)
