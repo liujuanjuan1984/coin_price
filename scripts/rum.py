@@ -90,12 +90,8 @@ class Bot(RumClient):
         info = {}
         while True:
             info = self._post_to_rum(info)
-            if len(info) == 0:
-                print(datetime.datetime.now(), "zzzzz ... 300...")
-                sleep(5 * 60)
-            else:
-                print(datetime.datetime.now(), "zzzzz ... 60...")
-                sleep(60)
+            print(datetime.datetime.now(), len(info), "zzzzz ... 60...", info.keys())
+            sleep(60)
 
 
 if __name__ == "__main__":

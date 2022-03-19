@@ -27,13 +27,10 @@ class SwapPrice:
         if os.path.exists(pairsfile):
             origin_data = JsonFile(pairsfile).read()
         else:
-            while True:
-                origin_data = self.session.get(f"{self.baseurl}/pairs").json()
-                if origin_data:
-                    JsonFile(pairsfile).write(origin_data)
-                    break
-                else:
-                    sleep(60)
+            origin_data = self.session.get(f"{self.baseurl}/pairs").json()
+            if origin_data:
+                JsonFile(pairsfile).write(origin_data)
+
         origin_data = origin_data["data"]["pairs"]
 
         return [(item["base_asset_id"], item["quote_asset_id"]) for item in origin_data]
@@ -54,13 +51,10 @@ class SwapPrice:
         if os.path.exists(assetsfile):
             origin_data = JsonFile(assetsfile).read()
         else:
-            while True:
-                origin_data = self.session.get(f"{self.baseurl}/assets").json()
-                if origin_data:
-                    JsonFile(assetsfile).write(origin_data)
-                    break
-                else:
-                    sleep(60)
+            origin_data = self.session.get(f"{self.baseurl}/assets").json()
+            if origin_data:
+                JsonFile(assetsfile).write(origin_data)
+
         origin_data = origin_data["data"]["assets"]
 
         symbol_id = {item["symbol"]: item["id"] for item in origin_data}

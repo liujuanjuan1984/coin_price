@@ -1,6 +1,5 @@
 import requests
 from datetime import timedelta, datetime
-from time import sleep
 from config import CMC_PRO_API_KEY  # coinmarketcap 的密钥
 
 
@@ -47,12 +46,9 @@ class CoinmarketcapPrice:
         return info
 
     def price(self, data=None):
-        for i in range(3):
-            data = data or self._origin_data()
-            if data:
-                return self._info_data(data)
-            else:
-                sleep(35)
+        data = data or self._origin_data()
+        if data:
+            return self._info_data(data)
         return {}
 
 
