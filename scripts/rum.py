@@ -1,6 +1,7 @@
 import os
 import datetime
-from time import sleep
+import time
+import sched
 from rumpyconfig import RumpyConfig
 from officepy import JsonFile
 from rumpy import RumClient
@@ -84,14 +85,15 @@ class Bot(RumClient):
                         progress = self._update_progress(gid, coin, progress)
                         info[coin] = None
 
+        self.post_to_rum()
         return info
 
     def post_to_rum(self):
-        info = {}
-        while True:
-            info = self._post_to_rum(info)
-            print(datetime.datetime.now(), len(info), "zzzzz ... 60...", info.keys())
-            sleep(60)
+        print(datetime.datetime.now(), "working ...")
+        s = sched.scheduler(time.time, time.sleep)
+        s.enter(60, 1, self._post_to_rum, ())
+        s.run()
+        print(datetime.datetime.now(), "exit?!!!")
 
 
 if __name__ == "__main__":
