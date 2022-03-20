@@ -7,8 +7,6 @@ from officepy import JsonFile, Dir
 this_dir = os.path.dirname(__file__)
 data_dir = os.path.join(this_dir, "data")
 Dir(data_dir).check()
-assetsfile = os.path.join(this_dir, "data", "assets.json")
-pairsfile = os.path.join(this_dir, "data", "pairs.json")
 
 
 class SwapPrice:
@@ -22,8 +20,11 @@ class SwapPrice:
         self.session = requests.Session()
         self.session.headers.update(headers)
         self.baseurl = "https://api.4swap.org/api"
+        self.pairsdata = self.pairs()
+        self.symbol_id, self.id_symbol = self.assets()
 
     def pairs(self):
+        pairsfile = os.path.join(this_dir, "data", "pairs.json")
         if os.path.exists(pairsfile):
             origin_data = JsonFile(pairsfile).read()
         else:
@@ -48,6 +49,7 @@ class SwapPrice:
             return {}
 
     def assets(self):
+        assetsfile = os.path.join(this_dir, "data", "assets.json")
         if os.path.exists(assetsfile):
             origin_data = JsonFile(assetsfile).read()
         else:
@@ -62,14 +64,13 @@ class SwapPrice:
         return symbol_id, id_symbol
 
     def get_id(self, symbol):
-        symbol_id, id_symbol = self.assets()
-        return symbol_id.get(symbol)
+        return self.symbol_id.get(symbol)
 
     def get_symbol(self, asset_id):
-        symbol_id, id_symbol = self.assets()
-        return id_symbol.get(asset_id)
+        return self.id_symbol.get(asset_id)
 
     def output(self, symbol, percent=0.01):
+        print(datetime.datetime.now(), "output", symbol, "start...")
         _paris = self.paris_symbol(symbol)
         amount = 0
         lines = []
@@ -111,6 +112,7 @@ class SwapPrice:
             + "\n"
             + str(datetime.datetime.now())[:19]
         )
+        print(datetime.datetime.now(), "output", symbol, "done.")
         return text
 
 

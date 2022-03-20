@@ -11,15 +11,22 @@ from swap import SwapPrice
 
 
 class Bot(RumClient):
-    progressfile = os.path.join(os.path.dirname(__file__), "progresss.json")
+    def init(self):
+        self.swap = SwapPrice()
+        self.cmk = CoinmarketcapPrice()
+        self.progress = {}
+        self.info = {}
+        return self
 
-    def _can_post(self, gid, coin, progress):
-        if gid not in progress:
+    def _can_post(self, gid, coin):
+        if gid not in self.progress:
+            self.progress[gid] = {}
             return True
-        elif coin not in progress[gid]:
+        elif coin not in self.progress[gid]:
+            self.progress[gid][coin] = None
             return True
         else:
-            last_time = progress[gid][coin]
+            last_time = self.progress[gid][coin]
             m = groups[gid]["minutes"]
             next_time = datetime.datetime.strptime(
                 last_time, "%Y-%m-%d %H:%M:%S"
@@ -30,34 +37,23 @@ class Bot(RumClient):
             else:
                 return False
 
-    def _update_info(self, coin, info):
+    def _update_info(self, coin):
 
-        if info.get(coin) == None:
-            info[coin] = {}
-        if "text" not in info[coin]:
-            info[coin]["text"] = []
+        if self.info.get(coin) == None:
+            self.info[coin] = {}
+        if "text" not in self.info[coin]:
+            self.info[coin]["text"] = []
 
             if coin in ["ETH", "BTC"]:
-                xinfo = CoinmarketcapPrice().price()
-                info.update(xinfo)
+                self.info.update(self.cmk.price())
 
-            swap = SwapPrice().output(coin)
+            swap = self.swap.output(coin)
             if swap:
-                info[coin]["text"].append(swap)
-        return info, len(info[coin]["text"]) > 0
+                self.info[coin]["text"].append(swap)
 
-    def _update_progress(self, gid, coin, progress):
-
-        if gid not in progress:
-            progress[gid] = {}
-        progress[gid][coin] = f"{datetime.datetime.now()}"[:19]
-        JsonFile(self.progressfile).write(progress)
-        return progress
-
-    def _post_to_rum(self, info=None, progress=None):
-        info = info or {}
+    def _post_to_rum(self):
+        print(datetime.datetime.now(), "_post_to_rum", "start...")
         seeds = JsonFile(RumpyConfig.SEEDSFILE).read({})
-        progress = progress or JsonFile(self.progressfile).read({})
 
         for gid in groups:
             # join group if bot-node not in the group.
@@ -69,32 +65,32 @@ class Bot(RumClient):
                 continue
 
             for coin in groups[gid]["coins"]:
-                info, flag = self._update_info(coin, info)
-                if not flag:
+                if not self._can_post(gid, coin):
                     continue
 
-                flag = self._can_post(gid, coin, progress)
-                if not flag:
-                    continue
+                self._update_info(coin)
 
-                for content in info[coin]["text"]:
+                for content in self.info[coin]["text"]:
                     print(content)
                     resp = self.group.send_note(content=content)
                     print(resp)
                     if "trx_id" in resp:
-                        progress = self._update_progress(gid, coin, progress)
-                        info[coin] = None
+                        self.progress[gid][coin] = f"{datetime.datetime.now()}"[:19]
+                        self.info[coin] = None
 
         self.post_to_rum()
-        return info
+        print(datetime.datetime.now(), "_post_to_rum", "done.")
 
     def post_to_rum(self):
-        print(datetime.datetime.now(), "working ...")
+        print(datetime.datetime.now(), "post_to_rum", "init ...")
         s = sched.scheduler(time.time, time.sleep)
+        print(datetime.datetime.now(), "post_to_rum", "enter ...")
         s.enter(60, 1, self._post_to_rum, ())
+        print(datetime.datetime.now(), "post_to_rum", "run ...")
         s.run()
         print(datetime.datetime.now(), "exit?!!!")
 
 
 if __name__ == "__main__":
-    Bot(**RumpyConfig.GUI).post_to_rum()
+    bot = Bot(**RumpyConfig.GUI).init()
+    bot.post_to_rum()
