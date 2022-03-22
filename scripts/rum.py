@@ -90,6 +90,27 @@ class Bot(RumClient):
         s.run()
         print(datetime.datetime.now(), "exit?!!!")
 
+    def once_post(self):
+        seeds = JsonFile(RumpyConfig.SEEDSFILE).read({})
+        for gid in groups:
+            # join group if bot-node not in the group.
+            self.group_id = gid
+            if not self.group.is_joined():
+                seed = seeds.get(gid)
+                if seed:
+                    self.group.join(seed)
+                continue
+
+            for coin in groups[gid]["coins"]:
+                self._update_info(coin)
+
+                for content in self.info[coin]["text"]:
+                    print(content)
+                    resp = self.group.send_note(content=content)
+                    print(resp)
+                    if "trx_id" in resp:
+                        self.info[coin] = None
+
 
 if __name__ == "__main__":
     bot = Bot(**RumpyConfig.GUI).init()

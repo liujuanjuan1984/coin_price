@@ -40,4 +40,12 @@ you should join the group which to post price info.
 python scripts/rum.py
 ```
 
+<!--
+
+长时间运行可能会遭遇某些报错而退出（知识点：定时调度）。
+
+有另外一种可选方式为：windows 设定任务计划程序，为 `scripts/example_once.py`创建新任务，一次性，每 10 分钟一次，无限期。
+
+-->
+
 Try it!
