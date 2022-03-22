@@ -47,7 +47,7 @@ class Bot(RumClient):
             if coin in ["ETH", "BTC"]:
                 self.info.update(self.cmk.price())
 
-            swap = self.swap.output(coin)
+            swap = self.swap.pool(coin)
             if swap:
                 self.info[coin]["text"].append(swap)
 

@@ -36,8 +36,11 @@ class SwapPrice:
 
         return [(item["base_asset_id"], item["quote_asset_id"]) for item in origin_data]
 
-    def paris_symbol(self, symbol):
-        return [item for item in self.pairs() if self.get_id(symbol) in item]
+    def pairs_of_assetid(self, asset_id):
+        return [item for item in self.pairs() if asset_id in item]
+
+    def paris_of_symbol(self, symbol):
+        return self.pairs_of_assetid(self.get_id(symbol))
 
     def pair(self, base_asset_id, quote_asset_id):
         api = f"{self.baseurl}/pairs/{base_asset_id}/{quote_asset_id}"
@@ -47,6 +50,9 @@ class SwapPrice:
         except Exception as e:
             print(e)
             return {}
+
+    def pair_by_symbol(self, base_symbol, quote_symbol):
+        return self.pair(self.get_id(base_symbol), self.get_id(quote_symbol))
 
     def assets(self):
         assetsfile = os.path.join(this_dir, "data", "assets.json")
@@ -69,37 +75,53 @@ class SwapPrice:
     def get_symbol(self, asset_id):
         return self.id_symbol.get(asset_id)
 
-    def output(self, symbol, percent=0.01):
-        print(datetime.datetime.now(), "output", symbol, "start...")
-        _paris = self.paris_symbol(symbol)
+    def _pair_price_by_symbol(self, base, quote):
+        return self._pair_price(self.get_id(base), self.get_id(quote))
+
+    def _pair_price(self, baseid, quoteid, sum_assetid=None):
+        data = self.pair(baseid, quoteid)
+        base_amount = float(data["base_amount"])
+        quote_amount = float(data["quote_amount"])
+        if base_amount * quote_amount == 0:
+            return ("error", "error", 0), ("error", 0)
+        base_amount = float(data["base_amount"])
+        quote_amount = float(data["quote_amount"])
+        quote = self.get_symbol(data["quote_asset_id"])
+        base = self.get_symbol(data["base_asset_id"])
+
+        if base_amount >= quote_amount:
+            # 交易对是 quote/base
+            price = (quote, base, base_amount / quote_amount)
+            # print(price)
+        else:
+            price = (base, quote, quote_amount / base_amount)
+            # print(price)
+
+        if sum_assetid == None:
+            sum_assetid = min(base_amount, quote_amount)
+
+        if baseid == sum_assetid:
+            amount = (base, base_amount)
+        else:
+            amount = (quote, quote_amount)
+
+        return price, amount
+
+    def _pool(self, asset_id, percent=0.01):
+        print(datetime.datetime.now(), "_pool", asset_id, "start...")
+        _paris = self.pairs_of_assetid(asset_id)
+
         amount = 0
         lines = []
         for baseid, quoteid in _paris:
-            data = self.pair(baseid, quoteid)
-            if not data:
-                continue
-            base = self.get_symbol(baseid)
-            quote = self.get_symbol(quoteid)
-            base_amount = float(data["base_amount"])
-            quote_amount = float(data["quote_amount"])
-            if base == symbol:
-                iamount = base_amount
-            else:
-                iamount = quote_amount
 
-            amount += iamount
-            if base_amount != 0:
-                price = round(quote_amount / base_amount, 2)
-            else:
-                price = 0
-            if price < 1:
-                if quote_amount != 0:
-                    price = round(base_amount / quote_amount, 2)
-                else:
-                    price = 0
-                line = (round(iamount, 2), f" {base}/{quote} 汇率 {price}")
-            else:
-                line = (round(iamount, 2), f"{quote}/{base} 汇率 {price}")
+            price, iamount = self._pair_price(baseid, quoteid, asset_id)
+
+            line = (
+                round(iamount[1], 2),
+                f"{price[0]}/{price[1]} 汇率 {round(price[2],2)}",
+            )
+            amount += iamount[1]
             lines.append(line)
 
         amount = round(amount, 2)
@@ -107,15 +129,60 @@ class SwapPrice:
         lines = [line for line in lines if line[0] / amount >= percent]
 
         text = (
-            f"=== {symbol} 流动池@4swap ===\n【{amount}】小计\n"
+            f"=== {self.get_symbol(asset_id)} 流动池@4swap ===\n【{amount}】小计\n"
             + "\n".join([f"【{line[0]}】{line[1]}" for line in lines])
             + "\n"
             + str(datetime.datetime.now())[:19]
         )
-        print(datetime.datetime.now(), "output", symbol, "done.")
         return text
+
+    def pool(self, symbol, percent=0.01):
+        """symbol 在 4swap 的流动池；某交易对的 symbol 数量占比低于 percent则不打印出来，当然会技术"""
+        return self._pool(self.get_id(symbol), percent)
+
+    def _rate(self, base, quote, bridge="XIN"):
+
+        price1, _ = self._pair_price_by_symbol(base, bridge)
+        price2, _ = self._pair_price_by_symbol(quote, bridge)
+        if price1[2] * price2[2] == 0:
+            return "", "", 0
+        # base/bridge
+        if price1[1] != bridge:
+            price1 = (price1[1], price1[0], 1 / price1[2])
+        # quote/bridge
+        if price2[1] != bridge:
+            price2 = (price2[1], price2[0], 1 / price2[2])
+        # quote/base
+        price = round(price2[2] / price1[2], 2)
+        print(f"{quote}/{base} {price}")
+
+        return quote, base, price
+
+    def rum_rate(self, symbol="RUM", bridge="XIN"):
+        pricefile = os.path.join(this_dir, "data", f"price_{symbol}.json")
+        prices = JsonFile(pricefile).read({})
+        quotes = ["BTC", "ETH", "BOX", "MOB", "EOS"]
+        texts = f"=== {symbol} 汇率@4swap ===\n"
+
+        for quote in quotes:
+            q, b, p = self._rate(symbol, quote, bridge)
+            if p != 0:
+                texts += f"{q}/{b} {p}\n"
+                key = f"{q}/{b}"
+                if key not in prices:
+                    prices[key] = {str(datetime.datetime.now()): p}
+                else:
+                    prices[key][str(datetime.datetime.now())] = p
+        texts += str(datetime.datetime.now())[:19]
+        JsonFile(pricefile).write(prices)
+        return texts
 
 
 if __name__ == "__main__":
-    symbol = "RUM"
-    SwapPrice().output(symbol)
+
+    # 流动池
+    r = SwapPrice().pool("XIN")
+    print(r)
+    # RUM 汇率
+    r = SwapPrice().rum_rate()
+    print(r)
