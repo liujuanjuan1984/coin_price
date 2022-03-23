@@ -44,8 +44,9 @@ class Bot(RumClient):
         if "text" not in self.info[coin]:
             self.info[coin]["text"] = []
 
-            if coin in ["ETH", "BTC"]:
-                self.info.update(self.cmk.price())
+            # update price info from coinmarketcap if needed.
+            # if coin in ["ETH", "BTC"]:
+            #    self.info.update(self.cmk.price())
 
             swap = self.swap.pool(coin)
             if swap:
@@ -82,6 +83,7 @@ class Bot(RumClient):
         print(datetime.datetime.now(), "_post_to_rum", "done.")
 
     def post_to_rum(self):
+        """this function could not work well always. maybe here are some bugs."""
         print(datetime.datetime.now(), "post_to_rum", "init ...")
         s = sched.scheduler(time.time, time.sleep)
         print(datetime.datetime.now(), "post_to_rum", "enter ...")
