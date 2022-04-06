@@ -26,18 +26,20 @@ groups = {
 
 you should join the group which to post price info.
 
-2. install these repos and put rumpy/officepy to PYTHONPATH;
+2. install requirements;
 
-- [seeds](https://github.com/liujuanjuan1984/seeds)
-- [rumpy](https://github.com/liujuanjuan1984/rumpy)
-- [officepy](https://github.com/liujuanjuan1984/officepy)
+```sh
+pip install rumpy
+pip install officy
+```
 
-3.  run the quorum (binary or app) , and update the rumpyconfig.py;
+
+3. run the [quorum (binary or app)](https://github.com/rumsystem/quorum);
 
 4. finally, run the scripts:
 
 ```sh
-python scripts/rum.py
+python scripts/example_once.py
 ```
 
 <!--

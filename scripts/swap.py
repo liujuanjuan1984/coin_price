@@ -2,7 +2,7 @@ import requests
 import json
 import os
 import datetime
-from officepy import JsonFile, Dir
+from officy import JsonFile, Dir
 
 this_dir = os.path.dirname(__file__)
 data_dir = os.path.join(this_dir, "data")

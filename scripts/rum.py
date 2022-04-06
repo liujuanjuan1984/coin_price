@@ -2,8 +2,6 @@ import os
 import datetime
 import time
 import sched
-from rumpyconfig import RumpyConfig
-from officepy import JsonFile
 from rumpy import RumClient
 from config import groups
 from coinmarketcap import CoinmarketcapPrice
@@ -54,15 +52,11 @@ class Bot(RumClient):
 
     def _post_to_rum(self):
         print(datetime.datetime.now(), "_post_to_rum", "start...")
-        seeds = JsonFile(RumpyConfig.SEEDSFILE).read({})
 
         for gid in groups:
             # join group if bot-node not in the group.
             self.group_id = gid
             if not self.group.is_joined():
-                seed = seeds.get(gid)
-                if seed:
-                    self.group.join(seed)
                 continue
 
             for coin in groups[gid]["coins"]:
@@ -93,14 +87,10 @@ class Bot(RumClient):
         print(datetime.datetime.now(), "exit?!!!")
 
     def once_post(self):
-        seeds = JsonFile(RumpyConfig.SEEDSFILE).read({})
         for gid in groups:
             # join group if bot-node not in the group.
             self.group_id = gid
             if not self.group.is_joined():
-                seed = seeds.get(gid)
-                if seed:
-                    self.group.join(seed)
                 continue
 
             for coin in groups[gid]["coins"]:
@@ -112,8 +102,3 @@ class Bot(RumClient):
                     print(resp)
                     if "trx_id" in resp:
                         self.info[coin] = None
-
-
-if __name__ == "__main__":
-    bot = Bot(**RumpyConfig.GUI).init()
-    bot.post_to_rum()

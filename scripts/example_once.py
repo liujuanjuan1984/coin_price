@@ -1,7 +1,8 @@
 from rum import Bot
-from rumpyconfig import RumpyConfig
 
-bot = Bot(**RumpyConfig.GUI).init()
+params = {"port": 62663, "crtfile": r"C:\certs\server.crt"}
+
+bot = Bot(params).init()
 bot.once_post()
 
 texts = bot.swap.rum_rate()
