@@ -2,7 +2,7 @@ from rum import Bot
 
 params = {"port": 62663, "crtfile": r"C:\certs\server.crt"}
 
-bot = Bot(params).init()
+bot = Bot(**params).init()
 bot.once_post()
 
 texts = bot.swap.rum_rate()
