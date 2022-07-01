@@ -1,8 +1,9 @@
-import requests
+import datetime
 import json
 import os
-import datetime
-from officy import JsonFile, Dir
+
+import requests
+from officy import Dir, JsonFile
 
 this_dir = os.path.dirname(__file__)
 data_dir = os.path.join(this_dir, "data")

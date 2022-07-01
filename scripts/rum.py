@@ -1,20 +1,20 @@
-import os
 import datetime
-import time
+import os
 import sched
-from rumpy import RumClient
-from config import groups
+import time
+
 from coinmarketcap import CoinmarketcapPrice
+from config import groups
 from swap import SwapPrice
 
 
-class Bot(RumClient):
-    def init(self):
+class Bot:
+    def __init__(self, rum_client):
+        self.rum = rum_client
         self.swap = SwapPrice()
         self.cmk = CoinmarketcapPrice()
         self.progress = {}
         self.info = {}
-        return self
 
     def _can_post(self, gid, coin):
         if gid not in self.progress:
@@ -26,9 +26,7 @@ class Bot(RumClient):
         else:
             last_time = self.progress[gid][coin]
             m = groups[gid]["minutes"]
-            next_time = datetime.datetime.strptime(
-                last_time, "%Y-%m-%d %H:%M:%S"
-            ) + datetime.timedelta(minutes=m)
+            next_time = datetime.datetime.strptime(last_time, "%Y-%m-%d %H:%M:%S") + datetime.timedelta(minutes=m)
 
             if datetime.datetime.now() >= next_time:
                 return True
@@ -55,8 +53,7 @@ class Bot(RumClient):
 
         for gid in groups:
             # join group if bot-node not in the group.
-            self.group_id = gid
-            if not self.group.is_joined():
+            if not self.rum.api.is_joined(gid):
                 continue
 
             for coin in groups[gid]["coins"]:
@@ -67,7 +64,7 @@ class Bot(RumClient):
 
                 for content in self.info[coin]["text"]:
                     print(content)
-                    resp = self.group.send_note(content=content)
+                    resp = self.rum.api.send_note(group_id=gid, content=content)
                     print(resp)
                     if "trx_id" in resp:
                         self.progress[gid][coin] = f"{datetime.datetime.now()}"[:19]
@@ -89,8 +86,7 @@ class Bot(RumClient):
     def once_post(self):
         for gid in groups:
             # join group if bot-node not in the group.
-            self.group_id = gid
-            if not self.group.is_joined():
+            if not self.rum.api.is_joined(gid):
                 continue
 
             for coin in groups[gid]["coins"]:
@@ -98,7 +94,7 @@ class Bot(RumClient):
 
                 for content in self.info[coin]["text"]:
                     print(content)
-                    resp = self.group.send_note(content=content)
+                    resp = self.rum.api.send_note(group_id=gid, content=content)
                     print(resp)
                     if "trx_id" in resp:
                         self.info[coin] = None
